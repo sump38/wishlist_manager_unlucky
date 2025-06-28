@@ -7,6 +7,7 @@ import { loadManifest } from './services/manifest.service';
 import { PackageIndex } from './views/package';
 import { Welcome } from './views/welcome/welcome.view';
 import WishlistsIndex from './views/wishlist';
+import { AuthCallback } from './views/auth/callback';
 
 
 
@@ -62,6 +63,7 @@ function App() {
         :
         <Router>
           <Route exact path="/" component={Welcome}></Route>
+          <Route exact path="/auth/callback" component={AuthCallback}></Route>
           <Route path="/wishlist" component={WishlistsIndex}></Route>
           <Route path="/package" component={PackageIndex}></Route>
         </Router>

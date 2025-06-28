@@ -100,7 +100,7 @@ export const WishlistBuildForm = (props: { wishlistId: number, build?: WishlistB
             setBuild({
                 ...blankBuild
             });
-            setSelectedPerks(randomPerks.map((p) => []));
+            setSelectedPerks(randomPerks.map((_p): number[] => []));
         }
     }
 

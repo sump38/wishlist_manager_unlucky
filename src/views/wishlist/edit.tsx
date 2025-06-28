@@ -1,4 +1,4 @@
-import { faArrowLeft, faDownload, faPlusCircle } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faDownload, faPlusCircle, faSignInAlt, faSignOutAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AppBar, Box, Button, IconButton, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { keyBy as _keyBy, map as _map, countBy } from "lodash";
@@ -13,6 +13,7 @@ import Wishlist from "../../interfaces/wishlist.interface";
 import { ExtendedCollectible, getFilterableWeapons } from "../../services/weapons.service";
 import { getBuilds } from "../../services/wishlistBuild.service";
 import { getWishlist } from "../../services/wishlists.service";
+import { useGithubLogin } from "../../hooks/useGithubLogin.hook";
 
 interface BuildCount {
     itemHash: number;
@@ -85,10 +86,21 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
     const [definitions, setDefinitions] = useState<{ [hash: number]: ExtendedCollectible }>()
     const [items, setItems] = useState<BuildCount[]>();
     const outerRef = React.createRef();
+    
+    // Add GitHub login hook
+    const { isLoggedIn, user, login, logout, isLoading } = useGithubLogin();
 
 
     function goToMain() {
         history.push("/");
+    }
+
+    function handleAuthAction() {
+        if (isLoggedIn) {
+            logout();
+        } else {
+            login();
+        }
     }
 
     useEffect(() => {
@@ -133,12 +145,46 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                 <Typography variant="h6" sx={classes.title}>
                     {wishlist?.name}
                 </Typography>
+                
+                {/* Show username when logged in */}
+                {isLoggedIn && user && (
+                    <Box display="flex" alignItems="center" marginRight={1}>
+                        <FontAwesomeIcon icon={faUser} style={{ marginRight: 8 }} />
+                        {!isMobile && (
+                            <Typography variant="body2" style={{ marginRight: 8 }}>
+                                {user.login}
+                            </Typography>
+                        )}
+                    </Box>
+                )}
+                
                 {isMobile ?
-                    <IconButton color="inherit" aria-label="menu" component={Link} to={`/wishlist/e/${wishlist?.id}/item/add`}>
+                    <IconButton edge="start" color="inherit" aria-label="menu" component={Link} to={`/wishlist/e/${wishlist?.id}/item/add`}>
                         <FontAwesomeIcon icon={faPlusCircle}></FontAwesomeIcon>
                     </IconButton>
                     :
                     <Button color="primary" variant="contained" component={Link} to={`/wishlist/e/${wishlist?.id}/item/add`}>Add Item</Button>
+                }
+                <Box p={isMobile ? 0 : 1}></Box>
+                {
+                    isMobile ?
+                        <IconButton 
+                            color="inherit" 
+                            aria-label={isLoggedIn ? "logout" : "login"} 
+                            onClick={handleAuthAction}
+                            disabled={isLoading}
+                        >
+                            <FontAwesomeIcon icon={isLoggedIn ? faSignOutAlt : faSignInAlt}></FontAwesomeIcon>
+                        </IconButton>
+                        :
+                        <Button 
+                            color="primary" 
+                            variant="contained" 
+                            onClick={handleAuthAction}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Loading...' : (isLoggedIn ? 'Logout' : 'Login with GitHub')}
+                        </Button>
                 }
                 <Box p={isMobile ? 0 : 1}></Box>
                 {
