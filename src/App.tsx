@@ -1,13 +1,13 @@
 import { Box, CircularProgress, colors, createTheme, ThemeProvider } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 import 'simplebar/dist/simplebar.min.css';
 import './App.scss';
 import { loadManifest } from './services/manifest.service';
 import { PackageIndex } from './views/package';
 import { Welcome } from './views/welcome/welcome.view';
-import WishlistsIndex from './views/wishlist';
 import { AuthCallback } from './views/auth/callback';
+import WishlistsIndex from './views/wishlist';
 
 
 

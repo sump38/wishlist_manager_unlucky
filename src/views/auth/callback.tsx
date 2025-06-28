@@ -10,10 +10,8 @@ export const AuthCallback: React.FC = () => {
   useEffect(() => {
     const handleCallback = async () => {
       // Get the code and state from URL parameters
-      // Since we're using HashRouter, parameters are in the hash fragment
-      const hash = window.location.hash;
-      const queryString = hash.includes('?') ? hash.split('?')[1] : '';
-      const urlParams = new URLSearchParams(queryString);
+      // With BrowserRouter, parameters are in search params
+      const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const state = urlParams.get('state');
 

@@ -3,7 +3,7 @@ import { AppBar, Box, Button, Card, CardActionArea, Checkbox, Container, FormCon
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useState } from "react";
-import { HashRouter, Link, Route, RouteChildrenProps } from "react-router-dom";
+import { Link, Route, RouteChildrenProps, Switch } from "react-router-dom";
 import Wishlist from "../../interfaces/wishlist.interface";
 import * as wishlistService from '../../services/wishlists.service';
 import { ExportPackageModal } from "./export";
@@ -71,9 +71,9 @@ export const PackageIndex = ({ history }: RouteChildrenProps) => {
 
     return (
         <>
-            <HashRouter>
+            <Switch>
                 <Route exact path="/package/export" render={props=><ExportPackageModal {...props} wishlistIds={selectedIds}/>}></Route>
-            </HashRouter>
+            </Switch>
             <Container maxWidth="sm">
                 <Box sx={classes.root} minHeight={isMobile ? "auto" : "100vh"}>
                     <AppBar position="static" >
