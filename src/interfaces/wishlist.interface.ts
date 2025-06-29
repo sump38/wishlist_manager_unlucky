@@ -24,6 +24,8 @@ export interface Wishlist{
     id?:number;
     name?:string;
     description?:string;
+    linkedRepo?: string;
+    sha?: string;
 }
 
 export default Wishlist;

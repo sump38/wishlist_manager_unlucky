@@ -14,6 +14,8 @@ interface LittleLightWishlistData {
     name: string;
     description: string;
     data: LittleLightWishlistBuild[];
+    linkedRepo?: string;
+    sha?: string;
 }
 
 const importTags = (tags: string[]): WishlistTag[] => {
@@ -61,7 +63,12 @@ const exportTags = (tags: WishlistTag[]): string[] => {
 
 export const importLittleLight = (content: LittleLightWishlistData): { wishlist: Wishlist, builds: WishlistBuild[] } => {
     return {
-        wishlist: { name: content.name || "", description: content.description || "" },
+        wishlist: {
+            name: content.name || "",
+            description: content.description || "",
+            linkedRepo: content.linkedRepo,
+            sha: content.sha
+        },
         builds: content.data.map((w) => ({
             description: w.description,
             itemHash: w.hash,

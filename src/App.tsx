@@ -10,8 +10,6 @@ import { AuthCallback } from './views/auth/callback';
 import WishlistsIndex from './views/wishlist';
 
 
-
-
 const theme = createTheme({
   palette: {
     primary: {
@@ -62,8 +60,8 @@ function App() {
         </Box>
         :
         <Router>
-          <Route exact path="/" component={Welcome}></Route>
           <Route exact path="/auth/callback" component={AuthCallback}></Route>
+          <Route exact path="/" component={Welcome}></Route>
           <Route path="/wishlist" component={WishlistsIndex}></Route>
           <Route path="/package" component={PackageIndex}></Route>
         </Router>

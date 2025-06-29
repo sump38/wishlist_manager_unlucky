@@ -9,9 +9,10 @@ interface WishlistBuilderDb extends Dexie{
     wishlistBuilds?:Dexie.Table<WishlistBuild, number>;
 }
 
-db.version(1).stores({
-  wishlists: 'id++,name,description',
-  wishlistBuilds: 'id++,tags,itemHash,wishlistId,[wishlistId+itemHash]',
+db.version(2).stores({
+  wishlists: 'id++,name,description, linkedRepo, sha, &uniqueId',
+  wishlistBuilds: 'id++,tags,itemHash,wishlistId,[wishlistId+itemHash], &uniqueId',
+  changeList: '++id, wishlistId, uniqueId, changeType, timestamp',
 });
 
 export default db;

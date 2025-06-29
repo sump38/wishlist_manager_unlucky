@@ -1,9 +1,7 @@
-import { AppBar, Box, Button, Card, CardActionArea, CardActions, Container, IconButton, Paper, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Button, Card, CardActionArea, CardActions, Paper, Typography, useMediaQuery, useTheme } from "@mui/material";
 
-import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useState } from "react";
-import { RouteChildrenProps } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import Wishlist from "../../interfaces/wishlist.interface";
 import * as wishlistService from '../../services/wishlists.service';
 
@@ -36,8 +34,9 @@ const useStyles = {
         }
     }
 
-export const LoadWishlist = ({ history }: RouteChildrenProps) => {
+export const LoadWishlist = () => {
     const [wishlists, setWishlists] = useState<Wishlist[]>();
+    const history = useHistory();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('xs'));
     const classes = useStyles;
@@ -61,14 +60,10 @@ export const LoadWishlist = ({ history }: RouteChildrenProps) => {
         setWishlists(wishlists.filter((wi) => wi.id !== w.id));
     }
 
-    const goToMain = () => {
-        history.push("/");
-    }
-
     return (
-        <Container maxWidth="sm">
-            <Box sx={classes.root} minHeight={isMobile ? "auto" : "100vh"}>
-                <AppBar position="static">
+        <Box sx={{ padding: 1 }} >
+            <Box sx={{ minHeight: isMobile ? "auto" : "100vh" }}>
+                {/* <AppBar position="static">
                     <Toolbar>
                         <IconButton edge="start" color="inherit" aria-label="menu" onClick={goToMain}>
                             <FontAwesomeIcon icon={faArrowLeft}></FontAwesomeIcon>
@@ -77,7 +72,7 @@ export const LoadWishlist = ({ history }: RouteChildrenProps) => {
                             Load Wishlist
                         </Typography>
                     </Toolbar>
-                </AppBar>
+                </AppBar> */}
                 <Paper sx={classes.content}>
                     {wishlists.length === 0 ?
                         <Box p={3} textAlign="center">
@@ -105,5 +100,5 @@ export const LoadWishlist = ({ history }: RouteChildrenProps) => {
                         )}
                 </Paper>
             </Box>
-        </Container>);
+        </Box>);
 };
