@@ -18,6 +18,7 @@ export interface WishlistBuild{
     description?:string;
     tags?:WishlistTag[];
     plugs?:number[][];
+    uniqueId?:string;
 }
 
 export interface Wishlist{
@@ -26,6 +27,7 @@ export interface Wishlist{
     description?:string;
     linkedRepo?: string;
     sha?: string;
+    uniqueId?: string;
 }
 
 export default Wishlist;

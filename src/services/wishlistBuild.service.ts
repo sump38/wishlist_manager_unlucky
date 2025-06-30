@@ -1,5 +1,6 @@
 import { WishlistBuild } from "../interfaces/wishlist.interface";
 import * as events from '../events';
+import { nanoid } from 'nanoid';
 import db from "./database.service";
 
 export async function saveBuild(build: WishlistBuild): Promise<WishlistBuild> {
@@ -7,6 +8,9 @@ export async function saveBuild(build: WishlistBuild): Promise<WishlistBuild> {
         await db.wishlistBuilds?.update(build.id, build);
         events.bus.publish(events.wishlists.OnWishlistBuildUpdated());
         return build;
+    }
+    if (!build.uniqueId) {
+        build.uniqueId = nanoid();
     }
     let key = await db.wishlistBuilds?.add(build);
     events.bus.publish(events.wishlists.OnWishlistBuildUpdated());

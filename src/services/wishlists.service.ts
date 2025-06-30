@@ -1,7 +1,11 @@
 import db from "./database.service";
 import Wishlist from "../interfaces/wishlist.interface";
+import { nanoid } from "nanoid";
 
 export async function createWishlist(wishlist: Wishlist): Promise<Wishlist> {
+    if (!wishlist.uniqueId) {
+        wishlist.uniqueId = nanoid();
+    }
     let key = await db.wishlists?.add(wishlist);
     return {
         ...wishlist,

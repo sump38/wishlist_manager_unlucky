@@ -8,6 +8,7 @@ interface LittleLightWishlistBuild {
     hash: number;
     plugs: number[][];
     tags: string[];
+    uniqueId?: string;
 }
 
 interface LittleLightWishlistData {
@@ -16,6 +17,7 @@ interface LittleLightWishlistData {
     data: LittleLightWishlistBuild[];
     linkedRepo?: string;
     sha?: string;
+    uniqueId?: string;
 }
 
 const importTags = (tags: string[]): WishlistTag[] => {
@@ -62,12 +64,14 @@ const exportTags = (tags: WishlistTag[]): string[] => {
 }
 
 export const importLittleLight = (content: LittleLightWishlistData): { wishlist: Wishlist, builds: WishlistBuild[] } => {
+    debugger;
     return {
         wishlist: {
             name: content.name || "",
             description: content.description || "",
             linkedRepo: content.linkedRepo,
-            sha: content.sha
+            sha: content.sha,
+            uniqueId: content.uniqueId,
         },
         builds: content.data.map((w) => ({
             description: w.description,
@@ -75,6 +79,7 @@ export const importLittleLight = (content: LittleLightWishlistData): { wishlist:
             name: w.name,
             plugs: w.plugs,
             tags: importTags(w.tags),
+            uniqueId: w.uniqueId
         }))
     };
 }
@@ -93,13 +98,15 @@ export const exportLittleLight = async (wishlistId: number, options?: ExportLitt
             hash: b.itemHash!,
             name: b.name || "",
             plugs: b.plugs?.filter((p) => p.length) || [],
-            tags: exportTags(b.tags || [])
+            tags: exportTags(b.tags || []),
+            uniqueId: b.uniqueId
         };
     });
     let json = JSON.stringify({
         description: wishlist?.description || "",
         name: wishlist?.name || "",
         data: dataBuilds,
+        uniqueId: wishlist?.uniqueId
     }, null, options?.JSONPrettyPrint ? 4 : 0);
     var blob = new Blob([json], { type: "application/json" });
     return blob;

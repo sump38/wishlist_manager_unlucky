@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { createWishlist } from '../services/wishlists.service';
 import { saveBuild } from '../services/wishlistBuild.service';
 import { useHistory } from 'react-router-dom';
@@ -68,6 +68,14 @@ export const useGithub = (): UseGithubResult => {
                         const jsonData = JSON.parse(content);
                         setWishlistData(jsonData);
                         console.log('Successfully fetched and parsed wishlist.json:', jsonData);
+
+                        // Check if uniqueId field exists and is populated
+                        if (!jsonData.uniqueId || jsonData.uniqueId.trim() === '') {
+                            setWishlistError('wishlist.json is missing a required fields');
+                            console.error('Validation error: uniqueId field missing ');
+                            return;
+                        }
+
                         console.log('Success: Wishlist data loaded successfully!');
 
                         //add linkedRepo and sha to the wishlist data
@@ -86,6 +94,7 @@ export const useGithub = (): UseGithubResult => {
                             });
                         }
                         console.log('Successfully saved wishlist data to local storage');
+                        setLoading(false);
                         history.push(`/wishlist/e/${w.id}`);
 
                     } catch (parseError) {
@@ -102,7 +111,10 @@ export const useGithub = (): UseGithubResult => {
             setRepoExists(false);
             setWishlistJsonExists(false);
         } finally {
-            setLoading(false);
+            // Only set loading to false if we haven't redirected
+            if (!repoExists || !wishlistJsonExists) {
+                setLoading(false);
+            }
         }
     }, [history]);
 
