@@ -1,6 +1,6 @@
-import { faArrowLeft, faDownload, faPlusCircle, faSignInAlt, faSignOutAlt, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faChevronDown, faDownload, faPlusCircle, faSignInAlt, faSignOutAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { AppBar, Box, Button, IconButton, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { AppBar, Box, Button, IconButton, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { keyBy as _keyBy, map as _map, countBy } from "lodash";
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, RouteChildrenProps } from "react-router-dom";
@@ -85,6 +85,7 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
     const [wishlist, setWishlist] = useState<Wishlist>();
     const [definitions, setDefinitions] = useState<{ [hash: number]: ExtendedCollectible }>()
     const [items, setItems] = useState<BuildCount[]>();
+    const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
     const outerRef = React.createRef();
     
     // Add GitHub login hook
@@ -101,6 +102,19 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
         } else {
             login();
         }
+    }
+
+    function handleUserMenuOpen(event: React.MouseEvent<HTMLElement>) {
+        setUserMenuAnchor(event.currentTarget);
+    }
+
+    function handleUserMenuClose() {
+        setUserMenuAnchor(null);
+    }
+
+    function handleLogout() {
+        logout();
+        handleUserMenuClose();
     }
 
     useEffect(() => {
@@ -146,18 +160,6 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                     {wishlist?.name}
                 </Typography>
                 
-                {/* Show username when logged in */}
-                {isLoggedIn && user && (
-                    <Box display="flex" alignItems="center" marginRight={1}>
-                        <FontAwesomeIcon icon={faUser} style={{ marginRight: 8 }} />
-                        {!isMobile && (
-                            <Typography variant="body2" style={{ marginRight: 8 }}>
-                                {user.login}
-                            </Typography>
-                        )}
-                    </Box>
-                )}
-                
                 {isMobile ?
                     <IconButton edge="start" color="inherit" aria-label="menu" component={Link} to={`/wishlist/e/${wishlist?.id}/item/add`}>
                         <FontAwesomeIcon icon={faPlusCircle}></FontAwesomeIcon>
@@ -166,27 +168,7 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                     <Button color="primary" variant="contained" component={Link} to={`/wishlist/e/${wishlist?.id}/item/add`}>Add Item</Button>
                 }
                 <Box p={isMobile ? 0 : 1}></Box>
-                {
-                    isMobile ?
-                        <IconButton 
-                            color="inherit" 
-                            aria-label={isLoggedIn ? "logout" : "login"} 
-                            onClick={handleAuthAction}
-                            disabled={isLoading}
-                        >
-                            <FontAwesomeIcon icon={isLoggedIn ? faSignOutAlt : faSignInAlt}></FontAwesomeIcon>
-                        </IconButton>
-                        :
-                        <Button 
-                            color="primary" 
-                            variant="contained" 
-                            onClick={handleAuthAction}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Loading...' : (isLoggedIn ? 'Logout' : 'Login with GitHub')}
-                        </Button>
-                }
-                <Box p={isMobile ? 0 : 1}></Box>
+                
                 {
                     isMobile ?
                         <IconButton color="inherit" aria-label="menu" component={Link} to={`/wishlist/e/${wishlist?.id}/export`}>
@@ -195,6 +177,67 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                         :
                         <Button color="primary" variant="contained" component={Link} to={`/wishlist/e/${wishlist?.id}/export`}>Export Wishlist</Button>
                 }
+                <Box p={isMobile ? 0 : 1}></Box>
+
+                {/* User authentication section - rightmost */}
+                {isLoggedIn && user ? (
+                    // User menu dropdown when logged in
+                    <>
+                        <Button
+                            color="inherit"
+                            onClick={handleUserMenuOpen}
+                            startIcon={<FontAwesomeIcon icon={faUser} />}
+                            disabled={isLoading}
+                        >
+                            {!isMobile && user.login}
+                        </Button>
+                        <Menu
+                            anchorEl={userMenuAnchor}
+                            open={Boolean(userMenuAnchor)}
+                            onClose={handleUserMenuClose}
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'right',
+                            }}
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                        >
+                            {isMobile && (
+                                <MenuItem disabled>
+                                    <Typography variant="body2" color="textSecondary">
+                                        {user.login}
+                                    </Typography>
+                                </MenuItem>
+                            )}
+                            <MenuItem onClick={handleLogout}>
+                                <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: 8 }} />
+                                Logout
+                            </MenuItem>
+                        </Menu>
+                    </>
+                ) : (
+                    // Login button when not logged in
+                    isMobile ?
+                        <IconButton 
+                            color="inherit" 
+                            aria-label="login" 
+                            onClick={handleAuthAction}
+                            disabled={isLoading}
+                        >
+                            <FontAwesomeIcon icon={faUser}></FontAwesomeIcon>
+                        </IconButton>
+                        :
+                        <Button 
+                            color="inherit" 
+                            onClick={handleAuthAction}
+                            disabled={isLoading}
+                            startIcon={<FontAwesomeIcon icon={faUser} />}
+                        >
+                            {isLoading ? 'Loading...' : 'Login'}
+                        </Button>
+                )}
             </Toolbar>
         </AppBar>
         {useMemo(() => <Box flexGrow="1" >

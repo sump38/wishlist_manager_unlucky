@@ -20,6 +20,7 @@ interface UseGitHubLoginReturn {
   login: () => Promise<void>;
   logout: () => void;
   handleOAuthCallback: (code: string) => Promise<void>;
+  parseReturnPath: (state: string) => string;
 }
 
 export const useGithubLogin = (): UseGitHubLoginReturn => {
@@ -109,15 +110,22 @@ export const useGithubLogin = (): UseGitHubLoginReturn => {
     setError(null);
 
     try {
+      // Get current page path for redirect after auth
+      const currentPath = window.location.pathname + window.location.search;
+      const returnPath = currentPath === '/' ? '' : currentPath; // Don't include '/' in state to keep it shorter
+      
       // Create OAuth URL with required parameters
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
       const scope = encodeURIComponent('user:email');
-      const state = encodeURIComponent(Math.random().toString(36).substring(2, 15));
+      const randomState = Math.random().toString(36).substring(2, 15);
+      // Combine random state with return path, separated by a delimiter
+      const stateWithReturn = returnPath ? `${randomState}|${returnPath}` : randomState;
+      const state = encodeURIComponent(stateWithReturn);
       
       const oauthUrl = `${GITHUB_OAUTH_URL}?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
       
       // Store state for validation (in a real app, this should be more secure)
-      sessionStorage.setItem('github_oauth_state', state);
+      sessionStorage.setItem('github_oauth_state', randomState);
       
       // Redirect to GitHub OAuth
       window.location.href = oauthUrl;
@@ -143,6 +151,25 @@ export const useGithubLogin = (): UseGitHubLoginReturn => {
     console.log('GitHub logout completed');
   }, []);
 
+  const parseReturnPath = useCallback((state: string): string => {
+    try {
+      // Check if state contains return path (format: randomState|returnPath)
+      const decodedState = decodeURIComponent(state);
+      const parts = decodedState.split('|');
+      
+      if (parts.length === 2) {
+        // State contains return path
+        return parts[1] || '/';
+      } else {
+        // No return path, default to home
+        return '/';
+      }
+    } catch (err) {
+      console.error('Error parsing return path from state:', err);
+      return '/';
+    }
+  }, []);
+
   return {
     isLoggedIn,
     user,
@@ -151,5 +178,6 @@ export const useGithubLogin = (): UseGitHubLoginReturn => {
     login,
     logout,
     handleOAuthCallback,
+    parseReturnPath,
   };
 };

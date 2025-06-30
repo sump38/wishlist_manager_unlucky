@@ -5,7 +5,7 @@ import { useGithubLogin } from '../../hooks/useGithubLogin.hook';
 
 export const AuthCallback: React.FC = () => {
   const history = useHistory();
-  const { handleOAuthCallback, error } = useGithubLogin();
+  const { handleOAuthCallback, parseReturnPath, error } = useGithubLogin();
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -29,16 +29,22 @@ export const AuthCallback: React.FC = () => {
 
       // Validate state parameter
       const savedState = sessionStorage.getItem('github_oauth_state');
-      if (state !== savedState) {
+      // Extract the random state portion from the full state (format: randomState|returnPath)
+      const stateToValidate = state.includes('|') ? state.split('|')[0] : state;
+      
+      if (stateToValidate !== savedState) {
         console.error('Invalid state parameter - possible CSRF attack');
+        console.log('Expected state:', savedState, 'Received state:', stateToValidate);
         history.push('/');
         return;
       }
 
       try {
         await handleOAuthCallback(code);
-        // Clean up the URL by removing query parameters and redirect to home page
-        history.replace('/');
+        // Get the return path from the state parameter
+        const returnPath = parseReturnPath(state);
+        // Redirect to the original page or home
+        history.replace(returnPath);
       } catch (err) {
         console.error('OAuth callback failed:', err);
         // Redirect to home page even on error so user isn't stuck
