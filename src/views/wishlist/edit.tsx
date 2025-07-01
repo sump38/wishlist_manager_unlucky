@@ -14,6 +14,8 @@ import { ExtendedCollectible, getFilterableWeapons } from "../../services/weapon
 import { getBuilds } from "../../services/wishlistBuild.service";
 import { getWishlist } from "../../services/wishlists.service";
 import { useGithubLogin } from "../../hooks/useGithubLogin.hook";
+import { useBungieLogin } from "../../hooks/useBungieLogin.hook";
+import { useBungieItems } from "../../hooks/useBungieItems.hook";
 
 interface BuildCount {
     itemHash: number;
@@ -91,6 +93,23 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
     // Add GitHub login hook
     const { isLoggedIn, user, login, logout, isLoading } = useGithubLogin();
 
+    // Add Bungie login hook
+    const { 
+        isLoggedIn: isBungieLoggedIn, 
+        user: bungieUser, 
+        login: bungieLogin, 
+        logout: bungieLogout, 
+        isLoading: isBungieLoading 
+    } = useBungieLogin();
+
+    // Add Bungie items hook
+    const { 
+        items: bungieItems,
+        loading: isBungieItemsLoading,
+        error: bungieItemsError,
+        refresh: refreshBungieItems
+    } = useBungieItems();
+
 
     function goToMain() {
         history.push("/");
@@ -115,6 +134,19 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
     function handleLogout() {
         logout();
         handleUserMenuClose();
+    }
+
+    function handleBungieLogout() {
+        bungieLogout();
+        handleUserMenuClose();
+    }
+
+    function handleBungieAuthAction() {
+        if (isBungieLoggedIn) {
+            bungieLogout();
+        } else {
+            bungieLogin();
+        }
     }
 
     function handleSave() {
@@ -152,6 +184,17 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
             unsubscribe();
         };
     }, [wishlistId]);
+
+    // Log when Bungie items are loaded
+    useEffect(() => {
+        if (isBungieLoggedIn && bungieItems.length > 0) {
+            console.log('Bungie items loaded in edit view:', {
+                totalItems: bungieItems.length,
+                isLoading: isBungieItemsLoading,
+                error: bungieItemsError
+            });
+        }
+    }, [bungieItems, isBungieLoggedIn, isBungieItemsLoading, bungieItemsError]);
 
     return <Box sx={classes.root}>
         <AppBar color="primary" position="static">
@@ -240,8 +283,14 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                             </MenuItem>
                             <MenuItem onClick={handleLogout}>
                                 <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: 8 }} />
-                                Logout
+                                Logout GitHub
                             </MenuItem>
+                            {isBungieLoggedIn && (
+                                <MenuItem onClick={handleBungieLogout}>
+                                    <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: 8 }} />
+                                    Logout Bungie
+                                </MenuItem>
+                            )}
                         </Menu>
                     </>
                 ) : (
@@ -262,7 +311,69 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                             disabled={isLoading}
                             startIcon={<FontAwesomeIcon icon={faUser} />}
                         >
-                            {isLoading ? 'Loading...' : 'Login'}
+                            {isLoading ? 'Loading...' : 'Login GitHub'}
+                        </Button>
+                )}
+
+                {/* Bungie authentication section */}
+                <Box p={isMobile ? 0 : 1}></Box>
+                {isBungieLoggedIn && bungieUser ? (
+                    // Bungie user info when logged in
+                    isMobile ? (
+                        <IconButton
+                            color="secondary"
+                            disabled={isBungieLoading}
+                            onClick={handleBungieAuthAction}
+                        >
+                            {bungieUser.profilePicturePath ? (
+                                <img 
+                                    src={`https://www.bungie.net${bungieUser.profilePicturePath}`} 
+                                    alt={bungieUser.displayName}
+                                    style={{ width: 24, height: 24, borderRadius: '50%' }}
+                                />
+                            ) : (
+                                <FontAwesomeIcon icon={faUser} />
+                            )}
+                        </IconButton>
+                    ) : (
+                        <Button
+                            color="secondary"
+                            disabled={isBungieLoading}
+                            onClick={handleBungieAuthAction}
+                            startIcon={
+                                bungieUser.profilePicturePath ? (
+                                    <img 
+                                        src={`https://www.bungie.net${bungieUser.profilePicturePath}`} 
+                                        alt={bungieUser.displayName}
+                                        style={{ width: 20, height: 20, borderRadius: '50%' }}
+                                    />
+                                ) : (
+                                    <FontAwesomeIcon icon={faUser} />
+                                )
+                            }
+                        >
+                            {bungieUser.displayName}
+                        </Button>
+                    )
+                ) : (
+                    // Bungie login button when not logged in
+                    isMobile ?
+                        <IconButton
+                            color="secondary"
+                            aria-label="bungie-login"
+                            onClick={handleBungieAuthAction}
+                            disabled={isBungieLoading}
+                        >
+                            <FontAwesomeIcon icon={faUser}></FontAwesomeIcon>
+                        </IconButton>
+                        :
+                        <Button
+                            color="secondary"
+                            onClick={handleBungieAuthAction}
+                            disabled={isBungieLoading}
+                            startIcon={<FontAwesomeIcon icon={faUser} />}
+                        >
+                            {isBungieLoading ? 'Loading...' : 'Login Bungie'}
                         </Button>
                 )}
             </Toolbar>

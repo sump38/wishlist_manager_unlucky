@@ -7,6 +7,7 @@ import { loadManifest } from './services/manifest.service';
 import { PackageIndex } from './views/package';
 import { Welcome } from './views/welcome/welcome.view';
 import { AuthCallback } from './views/auth/callback';
+import { BungieAuthCallback } from './views/auth/bungie-callback';
 import WishlistsIndex from './views/wishlist';
 
 
@@ -61,6 +62,7 @@ function App() {
         :
         <Router>
           <Route exact path="/auth/callback" component={AuthCallback}></Route>
+          <Route exact path="/auth/bungie" component={BungieAuthCallback}></Route>
           <Route exact path="/" component={Welcome}></Route>
           <Route path="/wishlist" component={WishlistsIndex}></Route>
           <Route path="/package" component={PackageIndex}></Route>
