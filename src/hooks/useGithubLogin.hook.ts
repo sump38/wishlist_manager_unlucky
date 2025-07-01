@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 
-const GITHUB_OAUTH_URL = 'https://github.com/login/oauth/authorize';
-const GITHUB_CLIENT_ID = 'Ov23liSNxzMqJHCrLz8D';
-const APP_AUTH_SERVER_URL = 'https://wishlist-auth-server.vercel.app/api/github-auth';
+const GITHUB_OAUTH_URL = process.env.REACT_APP_GITHUB_OAUTH_URL || 'https://github.com/login/oauth/authorize';
+const GITHUB_CLIENT_ID = process.env.REACT_APP_GITHUB_CLIENT_ID || '';
+const APP_AUTH_SERVER_URL = process.env.REACT_APP_AUTH_SERVER_URL || '';
 
 interface GitHubUser {
   id: number;
