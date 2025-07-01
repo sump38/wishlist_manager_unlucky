@@ -36,3 +36,9 @@ export async function deleteBuild(id: number) {
     await db.wishlistBuilds!.delete(id);
     events.bus.publish(events.wishlists.OnWishlistBuildUpdated());
 }
+
+export async function deleteBuildsByWishlistId(wishlistId: number) {
+    console.log("delete builds for wishlist " + wishlistId);
+    await db.wishlistBuilds!.where('wishlistId').equals(wishlistId).delete();
+    events.bus.publish(events.wishlists.OnWishlistBuildUpdated());
+}

@@ -1,8 +1,8 @@
-import { faArrowLeft, faChevronDown, faDownload, faPlusCircle, faSignInAlt, faSignOutAlt, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faChevronDown, faDownload, faPlusCircle, faSave, faSignInAlt, faSignOutAlt, faUser, faSync } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AppBar, Box, Button, IconButton, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { keyBy as _keyBy, map as _map, countBy } from "lodash";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link, RouteChildrenProps } from "react-router-dom";
 import ScrollContainer from 'react-scrollbars-custom';
 import AutoSizer from "react-virtualized-auto-sizer";
@@ -86,8 +86,8 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
     const [definitions, setDefinitions] = useState<{ [hash: number]: ExtendedCollectible }>()
     const [items, setItems] = useState<BuildCount[]>();
     const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
-    const outerRef = React.createRef();
-    
+    const outerRef = useRef();
+
     // Add GitHub login hook
     const { isLoggedIn, user, login, logout, isLoading } = useGithubLogin();
 
@@ -115,6 +115,11 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
     function handleLogout() {
         logout();
         handleUserMenuClose();
+    }
+
+    function handleSave() {
+        handleUserMenuClose();
+        history.push(`/wishlist/e/${wishlistId}/save-to-github`);
     }
 
     useEffect(() => {
@@ -150,16 +155,34 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
 
     return <Box sx={classes.root}>
         <AppBar color="primary" position="static">
-            <Toolbar >
-                <IconButton edge="start" color="inherit" aria-label="menu" onClick={goToMain}>
-                    <FontAwesomeIcon 
-                    // sx={classes.menuButton} 
-                    icon={faArrowLeft}></FontAwesomeIcon>
-                </IconButton>
-                <Typography variant="h6" sx={classes.title}>
-                    {wishlist?.name}
-                </Typography>
-                
+            <Toolbar sx={{ display: "flex", justifyContent: "flex-end" }}>
+                <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+                    <IconButton edge="start" color="inherit" aria-label="menu" onClick={goToMain}>
+                        <FontAwesomeIcon
+                            // sx={classes.menuButton} 
+                            icon={faArrowLeft}></FontAwesomeIcon>
+                    </IconButton>
+                    <Typography variant="h6" >
+                        {wishlist?.name}
+                    </Typography>
+                    {/* Only show sync button if wishlist has linkedRepo */}
+                    {wishlist?.linkedRepo && (
+                        <>
+                            <Box p={isMobile ? 0 : 1}></Box>
+                            {
+                                isMobile ?
+                                    <IconButton color="secondary" aria-label="sync" component={Link} to={`/wishlist/e/${wishlist?.id}/sync-from-github`}>
+                                        <FontAwesomeIcon icon={faSync}></FontAwesomeIcon>
+                                    </IconButton>
+                                    :
+                                    <Button color="secondary" variant="contained" component={Link} to={`/wishlist/e/${wishlist?.id}/sync-from-github`}>Sync</Button>
+                            }
+                        </>
+                    )}
+                </Box>
+
+
+
                 {isMobile ?
                     <IconButton edge="start" color="inherit" aria-label="menu" component={Link} to={`/wishlist/e/${wishlist?.id}/item/add`}>
                         <FontAwesomeIcon icon={faPlusCircle}></FontAwesomeIcon>
@@ -168,7 +191,7 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                     <Button color="primary" variant="contained" component={Link} to={`/wishlist/e/${wishlist?.id}/item/add`}>Add Item</Button>
                 }
                 <Box p={isMobile ? 0 : 1}></Box>
-                
+
                 {
                     isMobile ?
                         <IconButton color="inherit" aria-label="menu" component={Link} to={`/wishlist/e/${wishlist?.id}/export`}>
@@ -211,6 +234,10 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                                     </Typography>
                                 </MenuItem>
                             )}
+                            <MenuItem onClick={handleSave}>
+                                <FontAwesomeIcon icon={faSave} style={{ marginRight: 8 }} />
+                                Save to GitHub
+                            </MenuItem>
                             <MenuItem onClick={handleLogout}>
                                 <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: 8 }} />
                                 Logout
@@ -220,17 +247,17 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                 ) : (
                     // Login button when not logged in
                     isMobile ?
-                        <IconButton 
-                            color="inherit" 
-                            aria-label="login" 
+                        <IconButton
+                            color="inherit"
+                            aria-label="login"
                             onClick={handleAuthAction}
                             disabled={isLoading}
                         >
                             <FontAwesomeIcon icon={faUser}></FontAwesomeIcon>
                         </IconButton>
                         :
-                        <Button 
-                            color="inherit" 
+                        <Button
+                            color="inherit"
                             onClick={handleAuthAction}
                             disabled={isLoading}
                             startIcon={<FontAwesomeIcon icon={faUser} />}
@@ -242,7 +269,7 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
         </AppBar>
         {useMemo(() => <Box flexGrow="1" >
             <AutoSizer style={{ width: "100%", height: "100%" }}>
-                {({ height, width }:{height:number, width:number}) => {
+                {({ height, width }: { height: number, width: number }) => {
                     let totalItems = items?.length || 0;
                     let columnCount = isMobile ? 1 : 3;
                     let rowCount = Math.ceil(totalItems / columnCount);
@@ -271,6 +298,6 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                     );
                 }}
             </AutoSizer>
-        </Box>, [items, isMobile, outerRef, definitions, wishlistId])}
+        </Box>, [items, isMobile, definitions, wishlistId])}
     </Box>
 };

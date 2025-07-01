@@ -27,3 +27,11 @@ export async function getAllWishlists(): Promise<Wishlist[] | undefined> {
     let wishlists = await db.wishlists?.toArray();
     return wishlists;
 }
+
+export async function updateWishlist(wishlist: Wishlist): Promise<Wishlist> {
+    if (!wishlist.id) {
+        throw new Error("Wishlist must have an ID to be updated");
+    }
+    await db.wishlists?.put(wishlist);
+    return wishlist;
+}

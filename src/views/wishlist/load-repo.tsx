@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Alert, AppBar, Box, Button, CircularProgress, Container, IconButton, InputAdornment, Paper, TextField, Toolbar, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { RouteChildrenProps } from "react-router-dom";
-import { useGithub } from "../../hooks/useGithub";
+import { useRepoLink } from "../../hooks/useRepoLink";
 
 
 const useStyles = {
@@ -31,7 +31,7 @@ export const RepoList = ({ history, location }: RouteChildrenProps) => {
 
     const classes = useStyles;
     const [repoName, setRepoName] = useState("");
-    const { repoExists, wishlistJsonExists, loading, repoError, wishlistError, linkRepo } = useGithub();
+    const { repoExists, wishlistJsonExists, loading, repoError, wishlistError, linkRepo } = useRepoLink();
 
     const goToMain = () => {
         history.push("/");

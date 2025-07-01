@@ -116,7 +116,7 @@ export const useGithubLogin = (): UseGitHubLoginReturn => {
       
       // Create OAuth URL with required parameters
       const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
-      const scope = encodeURIComponent('user:email');
+      const scope = encodeURIComponent('public_repo');
       const randomState = Math.random().toString(36).substring(2, 15);
       // Combine random state with return path, separated by a delimiter
       const stateWithReturn = returnPath ? `${randomState}|${returnPath}` : randomState;
