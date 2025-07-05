@@ -64,7 +64,6 @@ const exportTags = (tags: WishlistTag[]): string[] => {
 }
 
 export const importLittleLight = (content: LittleLightWishlistData): { wishlist: Wishlist, builds: WishlistBuild[] } => {
-    debugger;
     return {
         wishlist: {
             name: content.name || "",

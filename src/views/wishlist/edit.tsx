@@ -1,6 +1,6 @@
-import { faArrowLeft, faChevronDown, faDownload, faPlusCircle, faSave, faSignInAlt, faSignOutAlt, faUser, faSync } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faDownload, faPlusCircle, faSave, faSignOutAlt, faUser, faSync, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { AppBar, Box, Button, IconButton, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { AppBar, Box, Button, CircularProgress, IconButton, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { keyBy as _keyBy, map as _map, countBy } from "lodash";
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link, RouteChildrenProps } from "react-router-dom";
@@ -14,12 +14,13 @@ import { ExtendedCollectible, getFilterableWeapons } from "../../services/weapon
 import { getBuilds } from "../../services/wishlistBuild.service";
 import { getWishlist } from "../../services/wishlists.service";
 import { useGithubLogin } from "../../hooks/useGithubLogin.hook";
-import { useBungieLogin } from "../../hooks/useBungieLogin.hook";
-import { useBungieItems } from "../../hooks/useBungieItems.hook";
+import { useBungieAuth } from "../../contexts/BungieAuthContext";
+import { useBungieVaultWeapons } from "../../hooks/useBungieVaultWeapons.hook";
 
 interface BuildCount {
     itemHash: number;
     count: number;
+    existsInUserCollection?: boolean;
 }
 
 const CustomScrollbars = ({ children,
@@ -88,6 +89,7 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
     const [definitions, setDefinitions] = useState<{ [hash: number]: ExtendedCollectible }>()
     const [items, setItems] = useState<BuildCount[]>();
     const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
+    const [bungieMenuAnchor, setBungieMenuAnchor] = useState<null | HTMLElement>(null);
     const outerRef = useRef();
 
     // Add GitHub login hook
@@ -98,18 +100,12 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
         isLoggedIn: isBungieLoggedIn, 
         user: bungieUser, 
         login: bungieLogin, 
-        logout: bungieLogout, 
-        isLoading: isBungieLoading 
-    } = useBungieLogin();
+        logout: bungieLogout,
+        isLoggingIn: isBungieLoading,
+        error: _bungieError
+    } = useBungieAuth();
 
-    // Add Bungie items hook
-    const { 
-        items: bungieItems,
-        loading: isBungieItemsLoading,
-        error: bungieItemsError,
-        refresh: refreshBungieItems
-    } = useBungieItems();
-
+    const { vaultWeapons, loading: isVaultWeaponsLoading, error: vaultWeaponsError, refresh: refreshVault } = useBungieVaultWeapons();
 
     function goToMain() {
         history.push("/");
@@ -138,15 +134,30 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
 
     function handleBungieLogout() {
         bungieLogout();
-        handleUserMenuClose();
+        handleBungieMenuClose();
     }
 
-    function handleBungieAuthAction() {
+    function handleBungieAuthAction(event: React.MouseEvent<HTMLElement>) {
         if (isBungieLoggedIn) {
-            bungieLogout();
+            handleBungieMenuOpen(event);
         } else {
             bungieLogin();
         }
+    }
+
+    function handleBungieMenuOpen(event: React.MouseEvent<HTMLElement>) {
+        setBungieMenuAnchor(event.currentTarget);
+    }
+
+    function handleBungieMenuClose() {
+        setBungieMenuAnchor(null);
+    }
+
+    function handleRefreshVault() {
+        if (refreshVault) {
+            refreshVault();
+        }
+        handleBungieMenuClose();
     }
 
     function handleSave() {
@@ -157,12 +168,58 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
     useEffect(() => {
         async function refreshItems() {
             let builds = await getBuilds(parseInt(wishlistId));
-            let items: BuildCount[] = _map(countBy(builds, (b) => b.itemHash), (v, k) => ({ itemHash: parseInt(k), count: v }));
+            if (vaultWeapons && vaultWeapons.length > 0) {
+                try {
+                    
+                    //go over builds and add existsInUserCollection property if itemHash and plugs exist in userBungieItems
+                    builds = builds.map(build => {
+                        const item = vaultWeapons.find(i => i.itemHash === build.itemHash);
+                        if( item && item.plugsHashes) {
+                            //check build plugs against item plugs to see if they exist
+                            let buildMatches = true;
+                            for (const plug of build.plugs) { //plug is an array of plug hashes
+                                //check if at least one hash exists in item plugs
+                                const match = plug.some(p => item.plugsHashes.includes(p));
+                                if (!match) {
+                                    buildMatches = false;
+                                    break;
+                                }
+                            }
+                            if (buildMatches) {
+                                return {
+                                    ...build,
+                                    existsInUserCollection: true
+                                };
+                            }
+                        }
+                        return build;
+                    });
+
+                } catch (error) {
+                    console.error('Failed to load Bungie items:', error);
+                }
+            }
+
+            
+            let items: BuildCount[] = _map(countBy(builds, (b) => b.itemHash), (v, k) => {
+                const itemHash = parseInt(k);
+                // Check if any build for this itemHash has existsInUserCollection: true
+                const existsInUserCollection = builds.some((build: any) => 
+                    build.itemHash === itemHash && build.existsInUserCollection === true
+                );
+                return { 
+                    itemHash, 
+                    count: v, 
+                    existsInUserCollection 
+                };
+            });
+            
+            
             setItems(items);
-            console.log('refresh items');
         }
 
         async function load() {
+
             let id = parseInt(wishlistId);
             let w = await getWishlist(id);
             setWishlist(w);
@@ -183,18 +240,7 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
         return () => {
             unsubscribe();
         };
-    }, [wishlistId]);
-
-    // Log when Bungie items are loaded
-    useEffect(() => {
-        if (isBungieLoggedIn && bungieItems.length > 0) {
-            console.log('Bungie items loaded in edit view:', {
-                totalItems: bungieItems.length,
-                isLoading: isBungieItemsLoading,
-                error: bungieItemsError
-            });
-        }
-    }, [bungieItems, isBungieLoggedIn, isBungieItemsLoading, bungieItemsError]);
+    }, [wishlistId, isBungieLoggedIn, vaultWeapons]);
 
     return <Box sx={classes.root}>
         <AppBar color="primary" position="static">
@@ -317,64 +363,104 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
 
                 {/* Bungie authentication section */}
                 <Box p={isMobile ? 0 : 1}></Box>
-                {isBungieLoggedIn && bungieUser ? (
-                    // Bungie user info when logged in
+                {isBungieLoading || isVaultWeaponsLoading ? (
+                    // Show loading spinner when logging in or loading vault
+                    <Box display="flex" alignItems="center">
+                        <CircularProgress size={isMobile ? 24 : 28} color="secondary" />
+                        {!isMobile && (
+                            <Box ml={1}>
+                                <Typography variant="body2" color="textSecondary">
+                                    {isBungieLoading ? 'Logging in...' : 'Loading vault...'}
+                                </Typography>
+                            </Box>
+                        )}
+                    </Box>
+                ) : isBungieLoggedIn && bungieUser ? (
+                    // Bungie user info when logged in - with dropdown
+                    <>
+                        {isMobile ? (
+                            <IconButton
+                                color="secondary"
+                                onClick={(e) => handleBungieMenuOpen(e)}
+                            >
+                                {bungieUser.profilePicturePath ? (
+                                    <img 
+                                        src={`https://www.bungie.net${bungieUser.profilePicturePath}`} 
+                                        alt={bungieUser.displayName}
+                                        style={{ width: 24, height: 24, borderRadius: '50%' }}
+                                    />
+                                ) : (
+                                    <FontAwesomeIcon icon={faUser} />
+                                )}
+                            </IconButton>
+                        ) : (
+                            <Button
+                                color="secondary"
+                                onClick={(e) => handleBungieMenuOpen(e)}
+                                startIcon={
+                                    bungieUser.profilePicturePath ? (
+                                        <img 
+                                            src={`https://www.bungie.net${bungieUser.profilePicturePath}`} 
+                                            alt={bungieUser.displayName}
+                                            style={{ width: 20, height: 20, borderRadius: '50%' }}
+                                        />
+                                    ) : (
+                                        <FontAwesomeIcon icon={faUser} />
+                                    )
+                                }
+                            >
+                                {bungieUser.displayName}
+                            </Button>
+                        )}
+                        <Menu
+                            anchorEl={bungieMenuAnchor}
+                            open={Boolean(bungieMenuAnchor)}
+                            onClose={handleBungieMenuClose}
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'right',
+                            }}
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                        >
+                            {isMobile && (
+                                <MenuItem disabled>
+                                    <Typography variant="body2" color="textSecondary">
+                                        {bungieUser.displayName}
+                                    </Typography>
+                                </MenuItem>
+                            )}
+                            <MenuItem onClick={handleRefreshVault}>
+                                <FontAwesomeIcon icon={faRedo} style={{ marginRight: 8 }} />
+                                Refresh Vault
+                            </MenuItem>
+                            <MenuItem onClick={handleBungieLogout}>
+                                <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: 8 }} />
+                                Logout
+                            </MenuItem>
+                        </Menu>
+                    </>
+                ) : (
+                    // Bungie login button when not logged in
                     isMobile ? (
                         <IconButton
                             color="secondary"
-                            disabled={isBungieLoading}
-                            onClick={handleBungieAuthAction}
+                            aria-label="bungie-login"
+                            onClick={(e) => handleBungieAuthAction(e)}
                         >
-                            {bungieUser.profilePicturePath ? (
-                                <img 
-                                    src={`https://www.bungie.net${bungieUser.profilePicturePath}`} 
-                                    alt={bungieUser.displayName}
-                                    style={{ width: 24, height: 24, borderRadius: '50%' }}
-                                />
-                            ) : (
-                                <FontAwesomeIcon icon={faUser} />
-                            )}
+                            <FontAwesomeIcon icon={faUser}></FontAwesomeIcon>
                         </IconButton>
                     ) : (
                         <Button
                             color="secondary"
-                            disabled={isBungieLoading}
-                            onClick={handleBungieAuthAction}
-                            startIcon={
-                                bungieUser.profilePicturePath ? (
-                                    <img 
-                                        src={`https://www.bungie.net${bungieUser.profilePicturePath}`} 
-                                        alt={bungieUser.displayName}
-                                        style={{ width: 20, height: 20, borderRadius: '50%' }}
-                                    />
-                                ) : (
-                                    <FontAwesomeIcon icon={faUser} />
-                                )
-                            }
-                        >
-                            {bungieUser.displayName}
-                        </Button>
-                    )
-                ) : (
-                    // Bungie login button when not logged in
-                    isMobile ?
-                        <IconButton
-                            color="secondary"
-                            aria-label="bungie-login"
-                            onClick={handleBungieAuthAction}
-                            disabled={isBungieLoading}
-                        >
-                            <FontAwesomeIcon icon={faUser}></FontAwesomeIcon>
-                        </IconButton>
-                        :
-                        <Button
-                            color="secondary"
-                            onClick={handleBungieAuthAction}
-                            disabled={isBungieLoading}
+                            onClick={(e) => handleBungieAuthAction(e)}
                             startIcon={<FontAwesomeIcon icon={faUser} />}
                         >
-                            {isBungieLoading ? 'Loading...' : 'Login Bungie'}
+                            Login Bungie
                         </Button>
+                    )
                 )}
             </Toolbar>
         </AppBar>
@@ -401,7 +487,12 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                                 if (!item) return <Box style={style}></Box>
                                 return <Box style={style}>
                                     <Box padding={1}>
-                                        <WeaponListItem definition={definitions[item.itemHash]} itemHash={item.itemHash} wishlistId={wishlistId}></WeaponListItem>
+                                        <WeaponListItem 
+                                            definition={definitions[item.itemHash]} 
+                                            itemHash={item.itemHash} 
+                                            wishlistId={wishlistId}
+                                            existsInUserCollection={item.existsInUserCollection}
+                                        />
                                     </Box>
                                 </Box>
                             }}

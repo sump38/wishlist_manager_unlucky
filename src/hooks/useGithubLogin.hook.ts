@@ -147,8 +147,10 @@ export const useGithubLogin = (): UseGitHubLoginReturn => {
     sessionStorage.removeItem('github_oauth_state');
     localStorage.removeItem('github_access_token');
     localStorage.removeItem('github_user');
+
+    // reload the page to reset state
+    window.location.reload();
     
-    console.log('GitHub logout completed');
   }, []);
 
   const parseReturnPath = useCallback((state: string): string => {

@@ -9,13 +9,19 @@ interface WeaponListItemProps {
     definition: ExtendedCollectible
     itemHash: number;
     wishlistId: number;
+    existsInUserCollection?: boolean;
 }
 
-export const WeaponListItem = ({ itemHash, wishlistId, definition }: WeaponListItemProps) => {
+export const WeaponListItem = ({ itemHash, wishlistId, definition, existsInUserCollection }: WeaponListItemProps) => {
     const season = definition?.season
     const confirmed = definition?.confirmed
     const name = definition?.displayProperties?.name
     const icon = definition?.displayProperties?.icon
+    
+    const goldenGradient = existsInUserCollection 
+        ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 193, 7, 0.2) 50%, rgba(255, 235, 59, 0.1) 100%)'
+        : 'none';
+    
     const button =
         <Button
             variant="outlined"
@@ -24,7 +30,13 @@ export const WeaponListItem = ({ itemHash, wishlistId, definition }: WeaponListI
             sx={{
                 padding: 0,
                 justifyContent: "left",
-                color: confirmed ? 'white' : 'error.light'
+                color: confirmed ? 'white' : 'error.light',
+                background: goldenGradient,
+                '&:hover': {
+                    background: existsInUserCollection 
+                        ? 'linear-gradient(135deg, rgba(255, 215, 0, 0.4) 0%, rgba(255, 193, 7, 0.3) 50%, rgba(255, 235, 59, 0.2) 100%)'
+                        : undefined
+                }
             }}
             component={Link}
             to={`/wishlist/e/${wishlistId}/item/e/${itemHash}`}

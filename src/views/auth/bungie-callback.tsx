@@ -1,59 +1,27 @@
 import React, { useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
-import { Box, CircularProgress, Typography } from '@mui/material';
-import { useBungieLogin } from '../../hooks/useBungieLogin.hook';
+import { Box, CircularProgress, Typography, Button } from '@mui/material';
+import { useBungieAuth } from '../../contexts/BungieAuthContext';
 
 export const BungieAuthCallback: React.FC = () => {
   const history = useHistory();
-  const { handleOAuthCallback, parseReturnPath, error } = useBungieLogin();
+  const { handleOAuthCallback, isLoggingIn, error } = useBungieAuth();
 
   useEffect(() => {
-    const handleCallback = async () => {
-      // Get the code and state from URL parameters
-      // With BrowserRouter, parameters are in search params
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
+    // Get the code and state from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
 
-      if (!code) {
-        console.error('No authorization code found in callback URL');
-        history.push('/');
-        return;
-      }
+    if (!code || !state) {
+      console.error('Missing authorization code or state in callback URL');
+      history.push('/');
+      return;
+    }
 
-      if (!state) {
-        console.error('No state parameter found in callback URL');
-        history.push('/');
-        return;
-      }
-
-      // Validate state parameter
-      const savedState = sessionStorage.getItem('bungie_oauth_state');
-      // Extract the random state portion from the full state (format: randomState|returnPath)
-      const stateToValidate = state.includes('|') ? state.split('|')[0] : state;
-      
-      if (stateToValidate !== savedState) {
-        console.error('Invalid state parameter - possible CSRF attack');
-        console.log('Expected state:', savedState, 'Received state:', stateToValidate);
-        history.push('/');
-        return;
-      }
-
-      try {
-        await handleOAuthCallback(code);
-        // Get the return path from the state parameter
-        const returnPath = parseReturnPath(state);
-        // Redirect to the original page or home
-        history.replace(returnPath);
-      } catch (err) {
-        console.error('OAuth callback failed:', err);
-        // Redirect to home page even on error so user isn't stuck
-        setTimeout(() => history.replace('/'), 3000);
-      }
-    };
-
-    handleCallback();
-  }, [handleOAuthCallback, history]);
+    // Trigger the auth callback - manager handles async operations and redirect
+    handleOAuthCallback(code, state);
+  }, []);
 
   if (error) {
     return (
@@ -72,13 +40,40 @@ export const BungieAuthCallback: React.FC = () => {
         <Typography variant="body2" color="textSecondary" gutterBottom>
           {error}
         </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Redirecting to home page...
-        </Typography>
+        <Box mt={3}>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={() => history.replace('/')}
+          >
+            Return to Home
+          </Button>
+        </Box>
       </Box>
     );
   }
 
+  if (isLoggingIn) {
+    return (
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        flexDirection="column" 
+        width="100vw" 
+        height="100vh"
+      >
+        <CircularProgress />
+        <Box p={3} color="#FFFFFF">
+          <Typography variant="body1">
+            Completing Bungie login...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Default loading state while processing
   return (
     <Box 
       display="flex" 
@@ -91,7 +86,7 @@ export const BungieAuthCallback: React.FC = () => {
       <CircularProgress />
       <Box p={3} color="#FFFFFF">
         <Typography variant="body1">
-          Completing Bungie login...
+          Processing authentication...
         </Typography>
       </Box>
     </Box>

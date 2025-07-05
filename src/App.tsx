@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import 'simplebar/dist/simplebar.min.css';
 import './App.scss';
+import { BungieAuthProvider } from './contexts/BungieAuthContext';
 import { loadManifest } from './services/manifest.service';
 import { PackageIndex } from './views/package';
 import { Welcome } from './views/welcome/welcome.view';
@@ -51,24 +52,26 @@ function App() {
     load();
   }, []);
   return (
-    <ThemeProvider theme={theme}>
-      {loading ?
-        <Box display="flex" justifyContent="center" alignItems="center" flexDirection="column" width="100vw" height="100vh">
-          <CircularProgress></CircularProgress>
-          <Box p={3} color="#FFFFFF">
-            Loading game data ...
+    <BungieAuthProvider>
+      <ThemeProvider theme={theme}>
+        {loading ?
+          <Box display="flex" justifyContent="center" alignItems="center" flexDirection="column" width="100vw" height="100vh">
+            <CircularProgress></CircularProgress>
+            <Box p={3} color="#FFFFFF">
+              Loading game data ...
+            </Box>
           </Box>
-        </Box>
-        :
-        <Router>
-          <Route exact path="/auth/callback" component={AuthCallback}></Route>
-          <Route exact path="/auth/bungie" component={BungieAuthCallback}></Route>
-          <Route exact path="/" component={Welcome}></Route>
-          <Route path="/wishlist" component={WishlistsIndex}></Route>
-          <Route path="/package" component={PackageIndex}></Route>
-        </Router>
-      }
-    </ThemeProvider>
+          :
+          <Router>
+            <Route exact path="/auth/callback" component={AuthCallback}></Route>
+            <Route exact path="/auth/bungie" component={BungieAuthCallback}></Route>
+            <Route exact path="/" component={Welcome}></Route>
+            <Route path="/wishlist" component={WishlistsIndex}></Route>
+            <Route path="/package" component={PackageIndex}></Route>
+          </Router>
+        }
+      </ThemeProvider>
+    </BungieAuthProvider>
   );
 }
 
