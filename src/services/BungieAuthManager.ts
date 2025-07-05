@@ -306,6 +306,12 @@ export class BungieAuthManager implements AuthState {
             if (data.Response.destinyMemberships && data.Response.destinyMemberships.length > 0) {
                 // Use the first membership or find a specific one if needed
                 destinyMembership = data.Response.destinyMemberships[0];
+                const steamMembership = data.Response.destinyMemberships.find((m: any) => m.membershipType === 3); // 3 is Steam
+
+                if( steamMembership) {
+                    destinyMembership = steamMembership;
+                }
+
             }
 
             // Create the combined user object with both Bungie.net and Destiny info
