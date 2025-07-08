@@ -12,7 +12,7 @@ import { WishlistBuildListItem } from "../../components/wishlist_build_list_item
 import * as events from "../../events";
 import { WishlistBuild } from "../../interfaces/wishlist.interface";
 import { getInventoryItemDefinition } from "../../services/manifest.service";
-import { deleteBuild, getBuilds } from "../../services/wishlistBuild.service";
+import { deleteBuildCopies, getBuilds } from "../../services/wishlistBuild.service";
 import { bungieURL } from "../../utils/bungie_url";
 import WishlistBuildForm from "../build/buildForm";
 
@@ -115,7 +115,7 @@ export const EditItem = ({ match, history }: RouteChildrenProps<{ itemHash: stri
                                                                 onDeleteClick={() => {
                                                                     let confirmation = window.confirm(`Do you really want to delete ${b.name ?? 'unnamed'} build?`);
                                                                     if (!confirmation || !b.id) return;
-                                                                    deleteBuild(b.id);
+                                                                    deleteBuildCopies(b.id);
                                                                 }}
                                                             ></WishlistBuildListItem>
                                                         </Box>);

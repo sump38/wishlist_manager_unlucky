@@ -1,7 +1,7 @@
 import { faArrowLeft, faDownload, faPlusCircle, faSave, faSignOutAlt, faUser, faSync, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { AppBar, Box, Button, CircularProgress, IconButton, Menu, MenuItem, Toolbar, Typography, useMediaQuery, useTheme } from "@mui/material";
-import { keyBy as _keyBy, map as _map, countBy } from "lodash";
+import { keyBy as _keyBy, map as _map, countBy, orderBy as _orderBy, groupBy } from "lodash";
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link, RouteChildrenProps } from "react-router-dom";
 import ScrollContainer from 'react-scrollbars-custom';
@@ -16,11 +16,13 @@ import { getWishlist } from "../../services/wishlists.service";
 import { useGithubLogin } from "../../hooks/useGithubLogin.hook";
 import { useBungieAuth } from "../../contexts/BungieAuthContext";
 import { useBungieVaultWeapons } from "../../hooks/useBungieVaultWeapons.hook";
+import { count } from "console";
 
 interface BuildCount {
     itemHash: number;
     count: number;
     existsInUserCollection?: boolean;
+    isTrash?: boolean;
 }
 
 const CustomScrollbars = ({ children,
@@ -200,17 +202,24 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                 }
             }
 
+
+            const itemGroups = groupBy(builds, (b) => b.itemHash);
             
-            let items: BuildCount[] = _map(countBy(builds, (b) => b.itemHash), (v, k) => {
+            
+            let items: BuildCount[] = _map(itemGroups, (v, k) => {
                 const itemHash = parseInt(k);
                 // Check if any build for this itemHash has existsInUserCollection: true
-                const existsInUserCollection = builds.some((build: any) => 
-                    build.itemHash === itemHash && build.existsInUserCollection === true
+                const existsInUserCollection = v.some((build: any) => 
+                    build.existsInUserCollection === true
                 );
-                return { 
+                const isTrash = v.some((build: any) => 
+                    build.name.toLowerCase().trim() === 'trash'
+                );
+                return {
                     itemHash, 
-                    count: v, 
-                    existsInUserCollection 
+                    count: v.length, 
+                    existsInUserCollection, 
+                    isTrash
                 };
             });
             
@@ -492,6 +501,7 @@ export const EditWishlist = ({ match, history }: RouteChildrenProps) => {
                                             itemHash={item.itemHash} 
                                             wishlistId={wishlistId}
                                             existsInUserCollection={item.existsInUserCollection}
+                                            isTrash={item.isTrash}
                                         />
                                     </Box>
                                 </Box>

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { DestinyCollectibleDefinition, DestinyInventoryItemDefinition } from "bungie-api-ts/destiny2/interfaces";
-import { uniqBy } from "lodash";
+import { trim, uniqBy } from "lodash";
 import { manifest } from ".";
 import { getCollectibleDefinition, getCollectibles, getInventoryItemDefinition, getInventoryItemList, getPresentationNodes } from "./manifest.service";
 
@@ -33,6 +33,53 @@ export async function getFilterableWeapons(): Promise<ExtendedCollectible[]> {
     const itemVariations = getAllItems([...collectionItems, ...craftableItems])
     filterableWeapons = uniqBy([...collectionItems, ...craftableItems, ...itemVariations], (i)=>i.hash);
     return filterableWeapons;
+}
+
+export async function getWeaponAlternateVersions(itemHash: number): Promise<ExtendedCollectible[]> {
+    await loadD2AI();
+    const item = getInventoryItemDefinition(itemHash);
+    const extendedItem = getExtendedItem(item);
+    if(!extendedItem) {
+        throw new Error(`Item with hash ${itemHash} not found`);
+    }
+
+    if (!item) return [];
+    // const collectible = getCollectibleDefinition(item.collectibleHash);
+    // const season = getSeason(collectible, item);
+    const loreHash = item.loreHash;
+    const allItems = await getFilterableWeapons();
+    const copies = allItems.filter((i) => {
+        return (
+            trimWeaponName(i.displayProperties.name) === trimWeaponName(extendedItem.displayProperties.name) &&
+            i.hash !== itemHash &&
+            i.season === extendedItem.season &&
+            i.itemType === destinyWeaponType &&
+            (loreHash ? i.loreHash === loreHash : true)
+        );
+    });
+    return copies;
+}
+
+export function trimWeaponName(name: string): string {
+    if (!name) return "";
+
+    let newName = name.trim();
+    // Remove "(Adept)" if it exists somewhere in the name
+    const adept = "(Adept)";
+    if (newName.includes(adept)) {
+        newName = newName.replace(adept, "").trim();
+    }
+    //remove (Timelost) if it exists somewhere in the name
+    const timelost = "(Timelost)";
+    if (newName.includes(timelost)) {
+        newName = newName.replace(timelost, "").trim();
+    }
+    //remove (Harrowing) if it exists somewhere in the name
+    const harrowing = "(Harrowing)";
+    if (newName.includes(harrowing)) {
+        newName = newName.replace(harrowing, "").trim();
+    }
+    return newName;
 }
 
 function getItemsFromCollections(nodeHash: number) : ExtendedCollectible[] {
